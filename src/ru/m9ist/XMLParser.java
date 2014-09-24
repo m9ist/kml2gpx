@@ -65,7 +65,7 @@ public class XMLParser {
             final StringBuilder sb = new StringBuilder();
             sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><gpx\n" +
                     "  xmlns=\"http://www.topografix.com/GPX/1/0\"\n" +
-                    "  version=\"1.0\" creator=\"Wissenbach Map3D 2.21\"\n" +
+                    "  version=\"1.0\" creator=\"kazmin.oleg@gmail.com\"\n" +
                     "  xmlns:wissenbach=\"http://www.cableone.net/cdwissenbach\"\n" +
                     "  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
                     "  xsi:schemaLocation=\"http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd\n" +
@@ -242,6 +242,8 @@ public class XMLParser {
                 final String[] coords = getNotEmptyNode(node).getNodeValue().split(" ");
                 if (time == null)
                     throw new RuntimeException("Time before coordinates!!!");
+                if (sb.length() > 0)
+                    sb.append("\t\n");
                 sb.append("<trkpt lat=\"").append(coords[0]);
                 sb.append("\" lon=\"").append(coords[1]);
                 sb.append("\"><ele>").append(coords[2]);
