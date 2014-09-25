@@ -3,7 +3,7 @@ package ru.m9ist;
 import java.io.*;
 
 /**
- * Производит запуск конвертации одного формата в другой
+ * РџСЂРѕРёР·РІРѕРґРёС‚ Р·Р°РїСѓСЃРє РєРѕРЅРІРµСЂС‚Р°С†РёРё РѕРґРЅРѕРіРѕ С„РѕСЂРјР°С‚Р° РІ РґСЂСѓРіРѕР№
  */
 public class Launcher {
     public static void main(final String[] args) throws FileNotFoundException {

@@ -4,8 +4,21 @@ import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
+import java.io.PrintStream;
 
 public class XMLParser {
+    private final File tmpDir;
+    private final File outDir;
+    private final String achiever;
+    final static private DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+
+    public XMLParser(final File tmpDir, final File outDir, final String achiever) {
+        this.tmpDir = tmpDir;
+        this.outDir = outDir;
+        this.achiever = achiever;
+    }
+
     private static class DocInfo {
         String name = null;
     }
@@ -14,13 +27,13 @@ public class XMLParser {
         String name = null;
         String descr = null;
 
-        // следующие поля задействуются только в точке
+        // СЃР»РµРґСѓСЋС‰РёРµ РїРѕР»СЏ Р·Р°РґРµР№СЃС‚РІСѓСЋС‚СЃСЏ С‚РѕР»СЊРєРѕ РІ С‚РѕС‡РєРµ
         String time = null;
         String lat = null;
         String lon = null;
         String ele = null;
 
-        // для путя
+        // РґР»СЏ РїСѓС‚СЏ
         final StringBuilder track = new StringBuilder();
         String type = null;
 
@@ -39,13 +52,12 @@ public class XMLParser {
         }
     }
 
-    public void parseXML(final String fileName) {
-        final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+    public String parseXML(final File fileSourse) {
         try {
             //Using factory get an instance of document builder
             final DocumentBuilder db = dbf.newDocumentBuilder();
             //parse using builder to get DOM representation of the XML file
-            final Document dom = db.parse(fileName);
+            final Document dom = db.parse(fileSourse);
             final Element dElement = dom.getDocumentElement();
             Node document = null;
             NodeList childNodes = dElement.getChildNodes();
@@ -56,20 +68,21 @@ public class XMLParser {
             }
             if (document == null) {
                 System.out.println("Not found Document node!!!");
-                return;
+                return null;
             }
 
             final NodeList docInfoNodes = document.getChildNodes();
             final DocInfo docInfo = new DocInfo();
             boolean isPoint;
             final StringBuilder sb = new StringBuilder();
-            sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><gpx\n" +
+            sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                    "<gpx\n" +
                     "  xmlns=\"http://www.topografix.com/GPX/1/0\"\n" +
                     "  version=\"1.0\" creator=\"kazmin.oleg@gmail.com\"\n" +
                     "  xmlns:wissenbach=\"http://www.cableone.net/cdwissenbach\"\n" +
                     "  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
                     "  xsi:schemaLocation=\"http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd\n" +
-                    "                       http://www.cableone.net/cdwissenbach http://www.cableone.net/cdwissenbach/wissenbach.xsd\">");
+                    "                      http://www.cableone.net/cdwissenbach http://www.cableone.net/cdwissenbach/wissenbach.xsd\">\n");
             for (int i = 0; i < docInfoNodes.getLength(); i++) {
                 final Node item = docInfoNodes.item(i);
                 isPoint = true;
@@ -79,33 +92,33 @@ public class XMLParser {
                 final String name = item.getNodeName();
                 if ("open".equals(name)) {
                     //<open>1</open>
-                    //todo разобраться что это
+                    //todo СЂР°Р·РѕР±СЂР°С‚СЊСЃСЏ С‡С‚Рѕ СЌС‚Рѕ
                     continue;
                 } else if ("visibility".equals(name)) {
                     //<visibility>1</visibility>
-                    //тоже мало понятно что это, расшаренность треков возможно? в любом случае сами будем это поле заполнять если что
+                    //С‚РѕР¶Рµ РјР°Р»Рѕ РїРѕРЅСЏС‚РЅРѕ С‡С‚Рѕ СЌС‚Рѕ, СЂР°СЃС€Р°СЂРµРЅРЅРѕСЃС‚СЊ С‚СЂРµРєРѕРІ РІРѕР·РјРѕР¶РЅРѕ? РІ Р»СЋР±РѕРј СЃР»СѓС‡Р°Рµ СЃР°РјРё Р±СѓРґРµРј СЌС‚Рѕ РїРѕР»Рµ Р·Р°РїРѕР»РЅСЏС‚СЊ РµСЃР»Рё С‡С‚Рѕ
                     continue;
                 } else if ("name".equals(name)) {
-                    //<name><![CDATA[ул. Багратиона, 29]]></name>
+                    //<name><![CDATA[СѓР». Р‘Р°РіСЂР°С‚РёРѕРЅР°, 29]]></name>
                     docInfo.name = getNotEmptyNode(item).getNodeValue();
                     continue;
                 } else if ("atom:author".equals(name)) {
-                    //<atom:author><atom:name><![CDATA[Создано в приложении Мои треки на Android]]></atom:name></atom:author>
-                    // игнорируем эту фигню, она не нужна нам, в крайнем случае укажем, что мы сами сконвертировали эту шнягу
+                    //<atom:author><atom:name><![CDATA[РЎРѕР·РґР°РЅРѕ РІ РїСЂРёР»РѕР¶РµРЅРёРё РњРѕРё С‚СЂРµРєРё РЅР° Android]]></atom:name></atom:author>
+                    // РёРіРЅРѕСЂРёСЂСѓРµРј СЌС‚Сѓ С„РёРіРЅСЋ, РѕРЅР° РЅРµ РЅСѓР¶РЅР° РЅР°Рј, РІ РєСЂР°Р№РЅРµРј СЃР»СѓС‡Р°Рµ СѓРєР°Р¶РµРј, С‡С‚Рѕ РјС‹ СЃР°РјРё СЃРєРѕРЅРІРµСЂС‚РёСЂРѕРІР°Р»Рё СЌС‚Сѓ С€РЅСЏРіСѓ
                     continue;
                 } else if ("Style".equals(name)) {
-                    // судя по всему это финтифлюшки с картинками, на которые нам пофиг
+                    // СЃСѓРґСЏ РїРѕ РІСЃРµРјСѓ СЌС‚Рѕ С„РёРЅС‚РёС„Р»СЋС€РєРё СЃ РєР°СЂС‚РёРЅРєР°РјРё, РЅР° РєРѕС‚РѕСЂС‹Рµ РЅР°Рј РїРѕС„РёРі
                     continue;
                 } else if ("Schema".equals(name)) {
-                    // судя по всему тут доп информация от датчиков, которых у меня пока нет
+                    // СЃСѓРґСЏ РїРѕ РІСЃРµРјСѓ С‚СѓС‚ РґРѕРї РёРЅС„РѕСЂРјР°С†РёСЏ РѕС‚ РґР°С‚С‡РёРєРѕРІ, РєРѕС‚РѕСЂС‹С… Сѓ РјРµРЅСЏ РїРѕРєР° РЅРµС‚
                     continue;
                 } else if ("Placemark".equals(name)) {
-                    // есть тэги без названий, которые регистрируют, как я понимаю промежуточные точки
-                    // и есть тэг с id = tour который и является нашим путем, нам надо вытащить что мы заполняем тут
-                    // и дальше уже распарсить его вне if'ов
+                    // РµСЃС‚СЊ С‚СЌРіРё Р±РµР· РЅР°Р·РІР°РЅРёР№, РєРѕС‚РѕСЂС‹Рµ СЂРµРіРёСЃС‚СЂРёСЂСѓСЋС‚, РєР°Рє СЏ РїРѕРЅРёРјР°СЋ РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅС‹Рµ С‚РѕС‡РєРё
+                    // Рё РµСЃС‚СЊ С‚СЌРі СЃ id = tour РєРѕС‚РѕСЂС‹Р№ Рё СЏРІР»СЏРµС‚СЃСЏ РЅР°С€РёРј РїСѓС‚РµРј, РЅР°Рј РЅР°РґРѕ РІС‹С‚Р°С‰РёС‚СЊ С‡С‚Рѕ РјС‹ Р·Р°РїРѕР»РЅСЏРµРј С‚СѓС‚
+                    // Рё РґР°Р»СЊС€Рµ СѓР¶Рµ СЂР°СЃРїР°СЂСЃРёС‚СЊ РµРіРѕ РІРЅРµ if'РѕРІ
                     final NamedNodeMap attributes = item.getAttributes();
                     if (attributes.getLength() > 0) {
-                        // у нас именно трек? на всякий случай убедимся на случай смены формата ^^
+                        // Сѓ РЅР°СЃ РёРјРµРЅРЅРѕ С‚СЂРµРє? РЅР° РІСЃСЏРєРёР№ СЃР»СѓС‡Р°Р№ СѓР±РµРґРёРјСЃСЏ РЅР° СЃР»СѓС‡Р°Р№ СЃРјРµРЅС‹ С„РѕСЂРјР°С‚Р° ^^
                         if (attributes.getLength() == 1) {
                             final Node att = attributes.item(0);
                             if ("id".equals(att.getNodeName()) && "tour".equals(att.getNodeValue())) {
@@ -120,7 +133,7 @@ public class XMLParser {
                     throw new RuntimeException("Undefined node name: " + name);
                 }
 
-                // проходимся и вытаскиваем все тэги
+                // РїСЂРѕС…РѕРґРёРјСЃСЏ Рё РІС‹С‚Р°СЃРєРёРІР°РµРј РІСЃРµ С‚СЌРіРё
                 final NodeList placemark = item.getChildNodes();
                 final NodeInfo nodeInfo = new NodeInfo();
                 for (int j = 0; j < placemark.getLength(); j++) {
@@ -135,15 +148,15 @@ public class XMLParser {
                         nodeInfo.descr = getNotEmptyNode(node).getNodeValue();
                     } else //noinspection StatementWithEmptyBody
                         if ("styleUrl".equals(nodeName)) {
-                            // игнорируем этот тэг
+                            // РёРіРЅРѕСЂРёСЂСѓРµРј СЌС‚РѕС‚ С‚СЌРі
                         } else {
                             if (isPoint) {
                                 if ("TimeStamp".equals(nodeName)) {
                                     nodeInfo.time = getNotEmptyNode(getNotEmptyNode(node)).getNodeValue();
                                 } else if ("Point".equals(nodeName)) {
                                     final String[] coords = getNotEmptyNode(getNotEmptyNode(node)).getNodeValue().split(",");
-                                    nodeInfo.lat = coords[0];
-                                    nodeInfo.lon = coords[1];
+                                    nodeInfo.lat = coords[1];
+                                    nodeInfo.lon = coords[0];
                                     nodeInfo.ele = coords[2];
                                 } else {
                                     throw new RuntimeException("Unsupported tag name in point tag: " + nodeName);
@@ -170,14 +183,14 @@ public class XMLParser {
                             ) {
                         throw new RuntimeException("Undefined situation: " + nodeInfo.toString());
                     }
-                    sb.append("<wpt lat=\"").append(nodeInfo.lat);
+                    sb.append("\t<wpt lat=\"").append(nodeInfo.lat);
                     sb.append("\" lon=\"").append(nodeInfo.lon);
-                    sb.append("\"><ele>").append(nodeInfo.ele);
-                    sb.append("</ele><time>").append(nodeInfo.time);
-                    sb.append("</time><name><![CDATA[").append(nodeInfo.name);
-                    sb.append("]]></name><desc><![CDATA[").append(nodeInfo.descr); // can add <cmt>
-                    sb.append("]]></desc><type><![CDATA[");//todo add sym and type??
-                    sb.append("]]></type></wpt>");
+                    sb.append("\">\n\t\t<ele>").append(nodeInfo.ele);
+                    sb.append("</ele>\n\t\t<time>").append(nodeInfo.time);
+                    sb.append("</time>\n\t\t<name><![CDATA[").append(nodeInfo.name);
+                    sb.append("]]></name>\n\t\t<desc><![CDATA[").append(nodeInfo.descr); // can add <cmt>
+                    sb.append("]]></desc>\n\t\t<type><![CDATA[");//todo add sym and type??
+                    sb.append("]]></type>\n\t</wpt>\n");
                 } else {
                     //todo
                     try {
@@ -191,21 +204,19 @@ public class XMLParser {
                     } catch (RuntimeException e) {
                         e.printStackTrace();
                     }
-                    sb.append("<trk><name>").append(nodeInfo.name);
-                    sb.append("</name><desc><![CDATA[").append(nodeInfo.descr); // can add <cmt>
-                    sb.append("]]></desc><type><![CDATA[").append(nodeInfo.type);//todo add sym??
-                    sb.append("]]></type><trkseg>").append(nodeInfo.track.toString());
-                    sb.append("</trkseg></trk>");
+                    sb.append("\t<trk>\n\t\t<name>").append(nodeInfo.name);
+                    sb.append("</name>\n\t\t<desc><![CDATA[").append(nodeInfo.descr); // can add <cmt>
+                    sb.append("]]></desc>\n\t\t<type><![CDATA[").append(nodeInfo.type);//todo add sym??
+                    sb.append("]]></type>\n\t\t<trkseg>\n").append(nodeInfo.track.toString());
+                    sb.append("\n\t\t</trkseg>\n\t</trk>\n");
                 }
             }
             sb.append("</gpx>");
-            System.out.println(sb.toString());
-            System.out.println();
-            System.out.println();
-            System.out.println();
+            return sb.toString();
         } catch (final Exception ignored) {
             ignored.printStackTrace();
         }
+        return null;
     }
 
     private static Node getTrackNode(Node node) {
@@ -244,11 +255,11 @@ public class XMLParser {
                     throw new RuntimeException("Time before coordinates!!!");
                 if (sb.length() > 0)
                     sb.append("\t\n");
-                sb.append("<trkpt lat=\"").append(coords[0]);
-                sb.append("\" lon=\"").append(coords[1]);
+                sb.append("\t\t\t<trkpt lat=\"").append(coords[1]);
+                sb.append("\" lon=\"").append(coords[0]);
                 sb.append("\"><ele>").append(coords[2]);
                 sb.append("</ele><time>").append(time);
-                sb.append("</time><sym>Waypoint</sym></trkpt>");
+                sb.append("</time></trkpt>");//<sym>Waypoint</sym>
                 time = null;
             } else //noinspection StatementWithEmptyBody
                 if ("ExtendedData".equals(nodeName)) {
@@ -274,10 +285,143 @@ public class XMLParser {
         return "#text".equals(node.getNodeName()) && "\n".equals(node.getNodeValue());
     }
 
-    public static void main(String[] args) {
-        final String fileName = "D:\\Projects\\kml2gpx\\doc.kml";
+    private void processDir(final File dir) {
+        System.out.println("  Process directory " + dir.getAbsolutePath());
+        for (File source : dir.listFiles()) {
+            if (source.isDirectory()) {
+                processDir(source);
+            } else if (source.isFile()) {
+                processFile(source);
+            }
+        }
+    }
 
-        final XMLParser xmlParser = new XMLParser();
-        xmlParser.parseXML(fileName);
+    private void processFile(final File file) {
+        System.out.println("    Process file " + file.getAbsolutePath());
+        if (!file.getName().endsWith(".kmz")) {
+            System.out.println("    --- Not kmz file, skipping.");
+            return;
+        }
+        final String command = achiever + " e \"" + file.getAbsolutePath() + "\" -o\"" + tmpDir.getAbsolutePath() + "\"";
+        try {
+            final Process process = Runtime.getRuntime().exec(command);
+            process.waitFor();
+        } catch (final Exception ignored) {
+            ignored.printStackTrace();
+        }
+        final File kmlFile = findKMLFile(tmpDir);
+        if (kmlFile == null) {
+            System.out.println("    --- Not found kml file in archive.");
+        }
+        final String out = parseXML(kmlFile);
+        if (out == null || out.length() == 0) {
+            System.out.println("    --- Empty kml file.");
+        } else {
+            try {
+                final PrintStream outputFie = new PrintStream(getOutputFile(file));
+                try {
+                    outputFie.print(out);
+                } finally {
+                    outputFie.close();
+                }
+            } catch (final Exception ignored) {
+                ignored.printStackTrace();
+            }
+        }
+        System.out.println("    --- Processed, clear tmp directory.");
+        clearDir(tmpDir);
+    }
+
+    private File getOutputFile(final File inputFile) {
+        final String name = inputFile.getName().substring(0, inputFile.getName().length() - 4);
+        for (int i = 0; i < 50; i++) {
+            final File res = new File(outDir, name + getRandom() + ".gpx");
+            if (!res.exists())
+                return res;
+        }
+        return null;
+    }
+
+    final private static char[] chars = new char[26 + 10];
+
+    static {
+        for (int i = 0; i < 10; i++) {
+            chars[i] = (char) ('0' + i);
+        }
+        for (int i = 0; i < 26; i++) {
+            chars[i + 10] = (char) ('A' + i);
+        }
+    }
+
+    private static String getRandom() {
+        final StringBuilder sb = new StringBuilder("_");
+        for (int i = 0; i < 5; i++) {
+            final int j = (int) (Math.random() * chars.length);
+            sb.append(chars[Math.min(j, chars.length - 1)]);
+        }
+        return sb.toString();
+    }
+
+    private File findKMLFile(final File source) {
+        if (source == null)
+            return null;
+        for (final File file : source.listFiles()) {
+            if (file.isFile() && file.getName().endsWith(".kml")) {
+                return file;
+            }
+            if (file.isDirectory()) {
+                final File kmlFile = findKMLFile(file);
+                if (kmlFile != null)
+                    return kmlFile;
+            }
+        }
+        return null;
+    }
+
+    private void clearDir(final File source) {
+        if (source == null)
+            return;
+        if (source.isFile()) {
+            source.delete();
+        } else {
+            for (final File file : source.listFiles()) {
+                clearDir(file);
+            }
+            if (source != tmpDir) {
+                source.delete();
+            }
+        }
+    }
+
+    public static void main(final String[] args) {
+        final File tmpDir = new File("C:\\Users\\Oleg\\Desktop\\tmp");
+        final String achiever = "C:\\Program Files\\7-Zip\\7z.exe";
+        final File input = new File("C:\\Users\\Oleg\\Desktop\\tracks");
+        final File outDir = new File("C:\\Users\\Oleg\\Desktop\\out");
+        if (!input.exists()) {
+            System.out.println("No input!");
+            return;
+        }
+        tmpDir.mkdirs();
+        outDir.mkdirs();
+        if (!outDir.exists() || !outDir.isDirectory()) {
+            System.out.println("Error creating output dir! " + outDir.getAbsolutePath());
+            return;
+        }
+        if (!tmpDir.isDirectory()) {
+            System.out.println("TMP directory cannot be created or is a file!");
+            return;
+        }
+        final XMLParser xmlParser = new XMLParser(tmpDir, outDir, achiever);
+        xmlParser.clearDir(tmpDir);
+        System.out.println("Start processing " + input.getAbsolutePath());
+        if (input.isFile()) {
+            xmlParser.processFile(input);
+        } else if (input.isDirectory()) {
+            xmlParser.processDir(input);
+        }
+        xmlParser.clearDir(tmpDir);
+        tmpDir.delete();
+        System.out.println("Stop program working...");
     }
 }
