@@ -32,8 +32,5 @@ public class Launcher {
             System.out.println("File is empty or with error!");
             return;
         }
-
-        final Parser parser = new HTMLParser();
-        parser.parseString(sb.toString());
     }
 }

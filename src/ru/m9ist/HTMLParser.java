@@ -10,10 +10,9 @@ import java.io.Reader;
 import java.io.StringReader;
 
 /**
- * Парсит поток из KML файла
+ * РџР°СЂСЃРёС‚ РїРѕС‚РѕРє РёР· KML С„Р°Р№Р»Р°
  */
-public class HTMLParser extends HTMLEditorKit.ParserCallback implements Parser {
-    @Override
+public class HTMLParser extends HTMLEditorKit.ParserCallback {
     public void parseString(final String data) {
         final Reader reader = new StringReader(data);
         final HTMLEditorKit.Parser parser = new ParserDelegator();
